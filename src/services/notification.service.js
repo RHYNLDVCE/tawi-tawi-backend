@@ -1,5 +1,5 @@
 const admin = require("firebase-admin");
-const serviceAccount = require("../config/firebase-service-account.json");
+const serviceAccount = require("../../firebase-service-account.json");
 const logger = require("../utils/logger");
 
 // Initializes the Firebase Admin SDK
