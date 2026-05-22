@@ -1,0 +1,35 @@
+{
+  "name": "tawi-tawi-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+"scripts": {
+  "dev": "nodemon src/server.js",
+  "start": "node src/server.js"
+},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@apollo/server": "^5.5.1",
+    "@as-integrations/express5": "^1.1.2",
+    "axios": "^1.16.1",
+    "bcryptjs": "^3.0.3",
+    "compression": "^1.8.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.10.0",
+    "google-auth-library": "^10.6.2",
+    "graphql": "^16.14.0",
+    "graphql-depth-limit": "^1.1.0",
+    "graphql-rate-limit": "^3.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "neo4j-driver": "^6.0.1",
+    "swagger-ui-express": "^5.0.1",
+    "uuid": "^14.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

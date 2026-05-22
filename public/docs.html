@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Portal | Tawi-Tawi Gateway</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for code blocks */
+        pre::-webkit-scrollbar { height: 8px; }
+        pre::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        pre::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        html { scroll-behavior: smooth; }
+        
+        /* Smooth transition for active navigation links */
+        aside a { transition: all 0.2s ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased flex flex-col min-h-screen">
+
+    <nav class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shadow-md sticky top-0 z-50">
+        <a href="/" class="text-xl font-bold tracking-wide flex items-center gap-2">
+            <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            Tawi-Tawi Gateway <span class="font-light text-slate-400">| Developer Portal</span>
+        </a>
+        <a href="/graphql" target="_blank" class="bg-blue-600 px-4 py-2 rounded text-sm font-medium hover:bg-blue-500 transition shadow-lg">Launch API Sandbox</a>
+    </nav>
+
+    <div class="flex flex-1 max-w-7xl mx-auto w-full">
+        
+        <aside class="w-64 hidden md:block shrink-0 py-8 pr-8 border-r border-slate-200 sticky top-[72px] h-[calc(100vh-72px)] overflow-y-auto">
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Getting Started</h3>
+                    <ul class="space-y-2 nav-menu">
+                        <li><a href="#overview" class="block text-slate-600 hover:text-blue-600 text-sm font-medium">1. Architecture Overview</a></li>
+                        <li><a href="#setup" class="block text-slate-600 hover:text-blue-600 text-sm font-medium">2. Local Environment Setup</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Frontend Integration</h3>
+                    <ul class="space-y-2 nav-menu">
+                        <li><a href="#client-auth" class="block text-slate-600 hover:text-blue-600 text-sm font-medium">Authentication Headers</a></li>
+                        <li><a href="#client-graphql" class="block text-slate-600 hover:text-blue-600 text-sm font-medium">Core GraphQL Operations</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Microservice Integration</h3>
+                    <ul class="space-y-2 nav-menu">
+                        <li><a href="#b2b-handshake" class="block text-slate-600 hover:text-blue-600 text-sm font-medium">The B2B Handshake</a></li>
+                        <li><a href="#b2b-verify" class="block text-slate-600 hover:text-blue-600 text-sm font-medium">1. Verification Endpoint</a></li>
+                        <li><a href="#b2b-register" class="block text-slate-600 hover:text-blue-600 text-sm font-medium">2. Registration Endpoint</a></li>
+                        <li><a href="#b2b-examples" class="block text-slate-600 hover:text-blue-600 text-sm font-medium">3. Code Examples</a></li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 py-8 px-4 md:pl-12 overflow-hidden">
+            
+            <div class="mb-12 border-b border-slate-200 pb-8">
+                <h1 class="text-4xl font-extrabold text-slate-900 mb-4">API Documentation</h1>
+                <p class="text-lg text-slate-600 leading-relaxed">
+                    This guide details how to consume the Gateway from a mobile or web frontend, and outlines the strict B2B contract required for external microservices to join the Super App ecosystem.
+                </p>
+            </div>
+
+            <section id="overview" class="scroll-mt-24 mb-16 border-l-4 border-transparent pl-4">
+                <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <span class="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
+                    Architecture Overview
+                </h2>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-slate-700 space-y-4">
+                    <p>The Tawi-Tawi Gateway acts as the central brain. It handles public user authentication (including Google and Meta identity providers) and securely routes authenticated user data to specialized internal microservices via Server-to-Server handshakes.</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong>API Protocol:</strong> GraphQL</li>
+                        <li><strong>Primary Endpoint:</strong> <code class="bg-slate-100 px-1.5 py-0.5 rounded text-sm text-red-500">POST /graphql</code></li>
+                        <li><strong>Database:</strong> Neo4j (Graph Database)</li>
+                        <li><strong>Authentication:</strong> Stateless JWT (JSON Web Tokens)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="setup" class="scroll-mt-24 mb-16 border-l-4 border-transparent pl-4">
+                <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <span class="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
+                    Local Environment Setup
+                </h2>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-6 border-b border-slate-100">
+                        <p class="text-slate-700">To run the Gateway locally, ensure Node.js (v18+) is installed. Create a <code class="bg-slate-100 px-1 rounded">.env</code> file in the root directory with the following configuration:</p>
+                    </div>
+                    <div class="bg-slate-900 p-6 overflow-x-auto relative group">
+                        <button class="copy-btn absolute top-3 right-3 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shadow-sm" aria-label="Copy code">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="font-medium">Copy</span>
+                        </button>
+<pre><code class="text-sm text-green-400"># --- Server Configuration ---
+PORT=1738
+NODE_ENV=development
+
+# --- Neo4j Database ---
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=secure_password
+
+# --- Authentication & Identity ---
+JWT_SECRET=long_random_string
+GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+META_APP_ID=your_meta_app_id
+META_APP_SECRET=your_meta_app_secret
+
+# --- B2B Microservices Handshake ---
+GATEWAY_INTERNAL_SECRET=secure_shared_secret_key
+TOURISM_SERVICE_URL=http://localhost:3001
+TRANSPORT_SERVICE_URL=http://localhost:3002</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <hr class="border-slate-200 my-12">
+
+            <div class="mb-8">
+                <h2 class="text-3xl font-extrabold text-slate-900">Frontend Integration Guide</h2>
+                <p class="text-slate-600 mt-2">How mobile (Flutter/Kotlin) and web apps communicate with the Gateway.</p>
+            </div>
+
+            <section id="client-auth" class="scroll-mt-24 mb-12 border-l-4 border-transparent pl-4">
+                <h3 class="text-xl font-bold text-slate-800 mb-3">Authentication Headers</h3>
+                <p class="text-slate-700 mb-4">Once a user logs in, the Gateway issues a JWT. This token must be included in the HTTP headers of all subsequent requests to access protected queries.</p>
+                <div class="bg-slate-900 p-4 rounded-lg overflow-x-auto shadow-inner relative group">
+                    <button class="copy-btn absolute top-2 right-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shadow-sm" aria-label="Copy code">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        <span class="font-medium">Copy</span>
+                    </button>
+                    <pre><code class="text-blue-300 text-sm font-mono">Authorization: Bearer &lt;YOUR_JWT_TOKEN&gt;</code></pre>
+                </div>
+            </section>
+
+            <section id="client-graphql" class="scroll-mt-24 mb-16 border-l-4 border-transparent pl-4">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">Core GraphQL Operations</h3>
+                
+                <div class="space-y-6">
+                    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div class="bg-slate-50 px-4 py-2 border-b border-slate-200 text-sm font-semibold text-slate-700">Standard Registration</div>
+                        <div class="bg-slate-900 p-4 overflow-x-auto relative group">
+                            <button class="copy-btn absolute top-3 right-3 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shadow-sm" aria-label="Copy code">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                <span class="font-medium">Copy</span>
+                            </button>
+<pre><code class="text-sm text-pink-400">mutation<span class="text-white"> RegisterUser {</span>
+  register<span class="text-white">(</span>
+    fullName: <span class="text-green-300">"Juan Dela Cruz"</span>, 
+    email: <span class="text-green-300">"juan@example.com"</span>, 
+    password: <span class="text-green-300">"SecurePassword123!"</span>
+  <span class="text-white">) {</span>
+    token
+    user <span class="text-white">{</span>
+      id
+      fullName
+      email
+    <span class="text-white">}</span>
+  <span class="text-white">}</span>
+<span class="text-white">}</span></code></pre>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div class="bg-slate-50 px-4 py-2 border-b border-slate-200 text-sm font-semibold text-slate-700">Social Login (Google / Meta)</div>
+                        <div class="p-4 border-b border-slate-100 text-sm text-slate-600">The client application must use the official Google/Meta SDKs to obtain an ID token, which is then passed to the Gateway for server-side validation.</div>
+                        <div class="bg-slate-900 p-4 overflow-x-auto relative group">
+                            <button class="copy-btn absolute top-3 right-3 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shadow-sm" aria-label="Copy code">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                <span class="font-medium">Copy</span>
+                            </button>
+<pre><code class="text-sm text-pink-400">mutation<span class="text-white"> LoginWithGoogle {</span>
+  googleLogin<span class="text-white">(</span>idToken: <span class="text-green-300">"TOKEN_FROM_MOBILE_SDK"</span><span class="text-white">) {</span>
+    token
+    user <span class="text-white">{</span>
+      id
+      email
+    <span class="text-white">}</span>
+  <span class="text-white">}</span>
+<span class="text-white">}</span></code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <hr class="border-slate-200 my-12">
+
+            <div class="mb-8">
+                <h2 class="text-3xl font-extrabold text-slate-900">Microservice Integration Guide</h2>
+                <p class="text-slate-600 mt-2">The strict API contract required for external services to join the ecosystem.</p>
+            </div>
+
+            <section id="b2b-handshake" class="scroll-mt-24 mb-10 border-l-4 border-transparent pl-4">
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 text-blue-900">
+                    <h3 class="font-bold text-lg mb-2">The Security Architecture</h3>
+                    <p class="text-sm leading-relaxed">The Gateway does not store specialized data. It acts as an identity provider. All communication between the Gateway and external microservices is secured using a pre-shared key. The Gateway sends the <code class="bg-blue-200 px-1 rounded">X-Internal-Gateway-Secret</code> header with every request. The external microservice <strong>must</strong> validate this header before processing the payload.</p>
+                </div>
+            </section>
+
+            <section id="b2b-verify" class="scroll-mt-24 mb-10 border-l-4 border-transparent pl-4">
+                <h3 class="text-xl font-bold text-slate-800 mb-2">1. The Verification Endpoint</h3>
+                <p class="text-slate-600 mb-4 text-sm">The Gateway calls this endpoint when a user attempts to access the microservice. The microservice must expose <code class="bg-slate-100 text-red-500 px-1 rounded border border-slate-200">POST /verify-user</code>.</p>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="bg-slate-900 rounded-lg overflow-hidden relative group">
+                        <div class="bg-slate-800 px-3 py-1.5 text-xs text-slate-400 font-mono flex justify-between items-center">
+                            <span>Gateway Request Payload</span>
+                        </div>
+                        <button class="copy-btn absolute top-9 right-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-sm" aria-label="Copy code">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="font-medium">Copy</span>
+                        </button>
+                        <div class="p-4 overflow-x-auto">
+<pre><code class="text-sm text-yellow-300">{
+  <span class="text-blue-300">"tawiTawiUserId"</span>: <span class="text-green-300">"uuid-string"</span>,
+  <span class="text-blue-300">"email"</span>: <span class="text-green-300">"user@example.com"</span>,
+  <span class="text-blue-300">"fullName"</span>: <span class="text-green-300">"Juan Dela Cruz"</span>
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 rounded-lg overflow-hidden relative group">
+                        <div class="bg-slate-800 px-3 py-1.5 text-xs text-slate-400 font-mono">Expected Microservice Response</div>
+                        <button class="copy-btn absolute top-9 right-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-sm" aria-label="Copy code">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="font-medium">Copy</span>
+                        </button>
+                        <div class="p-4 overflow-x-auto">
+<pre><code class="text-sm text-yellow-300">{
+  <span class="text-blue-300">"isLinked"</span>: <span class="text-pink-400">true</span>, 
+  <span class="text-blue-300">"requiresRegistration"</span>: <span class="text-pink-400">false</span>,
+  <span class="text-blue-300">"externalUserId"</span>: <span class="text-green-300">"local-db-id-123"</span>
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="b2b-register" class="scroll-mt-24 mb-10 border-l-4 border-transparent pl-4">
+                <h3 class="text-xl font-bold text-slate-800 mb-2">2. The Registration Endpoint</h3>
+                <p class="text-slate-600 mb-4 text-sm">If verification fails, the Gateway can register the user directly. The microservice must expose <code class="bg-slate-100 text-red-500 px-1 rounded border border-slate-200">POST /register-user</code>.</p>
+                
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="bg-slate-900 rounded-lg overflow-hidden relative group">
+                        <div class="bg-slate-800 px-3 py-1.5 text-xs text-slate-400 font-mono">Gateway Request Payload</div>
+                        <button class="copy-btn absolute top-9 right-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-sm" aria-label="Copy code">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="font-medium">Copy</span>
+                        </button>
+                        <div class="p-4 overflow-x-auto">
+<pre><code class="text-sm text-yellow-300">{
+  <span class="text-blue-300">"tawiTawiUserId"</span>: <span class="text-green-300">"uuid-string"</span>,
+  <span class="text-blue-300">"email"</span>: <span class="text-green-300">"user@example.com"</span>,
+  <span class="text-blue-300">"fullName"</span>: <span class="text-green-300">"Juan Dela Cruz"</span>,
+  <span class="text-slate-400">// Extra fields sent from the frontend UI</span>
+  <span class="text-blue-300">"phoneNumber"</span>: <span class="text-green-300">"09123456789"</span>
+}</code></pre>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 rounded-lg overflow-hidden relative group">
+                        <div class="bg-slate-800 px-3 py-1.5 text-xs text-slate-400 font-mono">Expected Microservice Response</div>
+                        <button class="copy-btn absolute top-9 right-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shadow-sm" aria-label="Copy code">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="font-medium">Copy</span>
+                        </button>
+                        <div class="p-4 overflow-x-auto">
+<pre><code class="text-sm text-yellow-300">{
+  <span class="text-blue-300">"isLinked"</span>: <span class="text-pink-400">true</span>
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="b2b-examples" class="scroll-mt-24 mb-16 border-l-4 border-transparent pl-4">
+                <h3 class="text-xl font-bold text-slate-800 mb-4">3. Implementation Examples</h3>
+                <p class="text-slate-600 mb-6 text-sm">Starter templates to quickly integrate an external microservice with the Gateway.</p>
+
+                <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm mb-8">
+                    <div class="bg-slate-50 px-4 py-2 border-b border-slate-200 text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        Node.js (Express)
+                    </div>
+                    <div class="bg-slate-900 p-4 overflow-x-auto relative group">
+                        <button class="copy-btn absolute top-3 right-3 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shadow-sm" aria-label="Copy code">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="font-medium">Copy</span>
+                        </button>
+<pre><code class="text-sm text-white"><span class="text-pink-400">const</span> express = require(<span class="text-green-300">'express'</span>);
+<span class="text-pink-400">const</span> app = express();
+
+app.use(express.json());
+
+<span class="text-slate-400">// Middleware to verify the Gateway Signature</span>
+<span class="text-pink-400">function</span> <span class="text-blue-300">requireGatewayAuth</span>(req, res, next) {
+  <span class="text-pink-400">const</span> secret = req.headers[<span class="text-green-300">'x-internal-gateway-secret'</span>];
+  
+  <span class="text-pink-400">if</span> (secret !== process.env.GATEWAY_INTERNAL_SECRET) {
+    <span class="text-pink-400">return</span> res.status(<span class="text-yellow-300">401</span>).json({ success: <span class="text-pink-400">false</span>, message: <span class="text-green-300">"Unauthorized"</span> });
+  }
+  next();
+}
+
+<span class="text-slate-400">// Handshake: Verification</span>
+app.post(<span class="text-green-300">'/verify-user'</span>, requireGatewayAuth, <span class="text-pink-400">async</span> (req, res) => {
+  <span class="text-pink-400">const</span> { tawiTawiUserId, email } = req.body;
+  
+  <span class="text-slate-400">// Query the local database to check if the user exists</span>
+  <span class="text-pink-400">const</span> userExists = <span class="text-pink-400">true</span>; 
+  
+  <span class="text-pink-400">if</span> (userExists) {
+    res.json({ isLinked: <span class="text-pink-400">true</span>, requiresRegistration: <span class="text-pink-400">false</span>, externalUserId: <span class="text-green-300">"123"</span> });
+  } <span class="text-pink-400">else</span> {
+    res.json({ isLinked: <span class="text-pink-400">false</span>, requiresRegistration: <span class="text-pink-400">true</span>, externalUserId: <span class="text-pink-400">null</span> });
+  }
+});
+
+<span class="text-slate-400">// Handshake: Registration</span>
+app.post(<span class="text-green-300">'/register-user'</span>, requireGatewayAuth, <span class="text-pink-400">async</span> (req, res) => {
+  <span class="text-pink-400">const</span> { tawiTawiUserId, email, fullName } = req.body;
+  
+  <span class="text-slate-400">// Insert the user into the local database</span>
+  res.json({ isLinked: <span class="text-pink-400">true</span> });
+});</code></pre>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div class="bg-slate-50 px-4 py-2 border-b border-slate-200 text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        Python (FastAPI)
+                    </div>
+                    <div class="bg-slate-900 p-4 overflow-x-auto relative group">
+                        <button class="copy-btn absolute top-3 right-3 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs px-2.5 py-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 shadow-sm" aria-label="Copy code">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span class="font-medium">Copy</span>
+                        </button>
+<pre><code class="text-sm text-white"><span class="text-pink-400">from</span> fastapi <span class="text-pink-400">import</span> FastAPI, Request, Header, HTTPException, Depends
+<span class="text-pink-400">import</span> os
+
+app = FastAPI()
+
+<span class="text-slate-400"># Dependency to verify the Gateway Signature</span>
+<span class="text-pink-400">def</span> <span class="text-blue-300">require_gateway_auth</span>(x_internal_gateway_secret: str = Header(<span class="text-pink-400">None</span>)):
+    expected_secret = os.getenv(<span class="text-green-300">"GATEWAY_INTERNAL_SECRET"</span>)
+    
+    <span class="text-pink-400">if</span> <span class="text-pink-400">not</span> x_internal_gateway_secret <span class="text-pink-400">or</span> x_internal_gateway_secret != expected_secret:
+        <span class="text-pink-400">raise</span> HTTPException(status_code=<span class="text-yellow-300">401</span>, detail=<span class="text-green-300">"Unauthorized"</span>)
+    
+    <span class="text-pink-400">return</span> <span class="text-pink-400">True</span>
+
+<span class="text-slate-400"># Handshake: Verification</span>
+<span class="text-blue-300">@app.post</span>(<span class="text-green-300">"/verify-user"</span>)
+<span class="text-pink-400">async def</span> <span class="text-blue-300">verify_user</span>(request: Request, authorized: bool = Depends(require_gateway_auth)):
+    data = <span class="text-pink-400">await</span> request.json()
+    user_id = data.get(<span class="text-green-300">"tawiTawiUserId"</span>)
+    
+    <span class="text-slate-400"># Query the local database to check if the user exists</span>
+    user_exists = <span class="text-pink-400">True</span>
+    
+    <span class="text-pink-400">if</span> user_exists:
+        <span class="text-pink-400">return</span> {<span class="text-green-300">"isLinked"</span>: <span class="text-pink-400">True</span>, <span class="text-green-300">"requiresRegistration"</span>: <span class="text-pink-400">False</span>, <span class="text-green-300">"externalUserId"</span>: <span class="text-green-300">"123"</span>}
+    <span class="text-pink-400">else</span>:
+        <span class="text-pink-400">return</span> {<span class="text-green-300">"isLinked"</span>: <span class="text-pink-400">False</span>, <span class="text-green-300">"requiresRegistration"</span>: <span class="text-pink-400">True</span>, <span class="text-green-300">"externalUserId"</span>: <span class="text-pink-400">None</span>}
+
+<span class="text-slate-400"># Handshake: Registration</span>
+<span class="text-blue-300">@app.post</span>(<span class="text-green-300">"/register-user"</span>)
+<span class="text-pink-400">async def</span> <span class="text-blue-300">register_user</span>(request: Request, authorized: bool = Depends(require_gateway_auth)):
+    data = <span class="text-pink-400">await</span> request.json()
+    
+    <span class="text-slate-400"># Insert the user into the local database</span>
+    <span class="text-pink-400">return</span> {<span class="text-green-300">"isLinked"</span>: <span class="text-pink-400">True</span>}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // 1. Scrollspy Implementation for Active Link Highlighting
+            const sections = document.querySelectorAll("section[id]");
+            const navLinks = document.querySelectorAll(".nav-menu a");
+
+            const observerOptions = {
+                root: null,
+                rootMargin: "-20% 0px -70% 0px", // Triggers active state when section passes top 20% of viewport
+                threshold: 0
+            };
+
+            const sectionObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        const currentId = entry.target.getAttribute("id");
+
+                        // Update navigation link styles
+                        navLinks.forEach((link) => {
+                            link.classList.remove("text-blue-600", "font-bold", "translate-x-1");
+                            link.classList.add("text-slate-600", "font-medium");
+                            
+                            if (link.getAttribute("href") === `#${currentId}`) {
+                                link.classList.remove("text-slate-600", "font-medium");
+                                link.classList.add("text-blue-600", "font-bold", "translate-x-1");
+                            }
+                        });
+
+                        // Optionally highlight the section border for context
+                        sections.forEach(sec => sec.classList.replace("border-blue-500", "border-transparent"));
+                        entry.target.classList.replace("border-transparent", "border-blue-500");
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach((section) => sectionObserver.observe(section));
+
+            // 2. Copy to Clipboard Implementation
+            const copyButtons = document.querySelectorAll('.copy-btn');
+            
+            copyButtons.forEach(button => {
+                button.addEventListener('click', async () => {
+                    // Find the sibling <code> block within the same parent container
+                    const codeElement = button.parentElement.querySelector('code');
+                    
+                    if (!codeElement) return;
+
+                    const textToCopy = codeElement.innerText;
+
+                    try {
+                        await navigator.clipboard.writeText(textToCopy);
+                        
+                        // Store original button HTML
+                        const originalHTML = button.innerHTML;
+                        
+                        // Show success state
+                        button.innerHTML = `
+                            <svg class="w-3.5 h-3.5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            <span class="font-medium text-green-400">Copied!</span>
+                        `;
+                        
+                        // Revert back after 2 seconds
+                        setTimeout(() => {
+                            button.innerHTML = originalHTML;
+                        }, 2000);
+                        
+                    } catch (err) {
+                        console.error('Failed to copy text: ', err);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
