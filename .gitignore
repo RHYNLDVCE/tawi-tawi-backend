@@ -1,5 +1,9 @@
 node_modules
 .env
+.env.local
 .DS_Store
 npm-debug.log
 src/config/firebase-service-account.json
+*.log
+server-out.txt
+server-err.txt

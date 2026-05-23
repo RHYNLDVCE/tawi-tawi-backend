@@ -4,7 +4,7 @@ const path = require("path");
 const { ApolloServer } = require("@apollo/server");
 const { expressMiddleware } = require("@as-integrations/express5");
 const jwt = require("jsonwebtoken");
-const depthLimit = require("graphql-depth-limit"); // Import depth limiter
+const depthLimit = require("graphql-depth-limit");
 
 const env = require("./config/env");
 const typeDefs = require("./graphql/typeDefs");
@@ -13,10 +13,11 @@ const { findUserById } = require("./modules/users/user.repository");
 const { serializeUser } = require("./modules/users/user.serializer");
 const USER_STATUS = require("./constants/userStatus");
 const logger = require("./utils/logger");
+const notFoundMiddleware = require("./middleware/notFound.middleware");
+const errorMiddleware = require("./middleware/error.middleware");
 
 const app = express();
 
-// Trust the reverse proxy if running behind a load balancer or API Gateway
 app.set("trust proxy", 1);
 
 app.use(cors({
@@ -27,16 +28,14 @@ app.use(cors({
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "../public")));
-// Extracts user for GraphQL Context
+
 const getUserFromToken = async (token) => {
   try {
     if (!token) return null;
     const decoded = jwt.verify(token.replace("Bearer ", ""), env.JWT_SECRET);
     const userNode = await findUserById(decoded.userId);
-    
     if (!userNode) return null;
     const user = userNode.properties;
-    
     if (user.status !== USER_STATUS.ACTIVE) return null;
     return serializeUser(userNode);
   } catch (error) {
@@ -45,12 +44,11 @@ const getUserFromToken = async (token) => {
   }
 };
 
-// Initializes Apollo Server
 async function startApolloServer() {
   const server = new ApolloServer({
     typeDefs,
     resolvers,
-    validationRules: [depthLimit(5)], // Blocks queries nested deeper than 5 levels
+    validationRules: [depthLimit(5)],
     formatError: (error) => {
       logger.error("GraphQL Error", error);
       return {
@@ -61,19 +59,16 @@ async function startApolloServer() {
   });
 
   await server.start();
-  
-  // Mounts GraphQL on /graphql endpoint using expressMiddleware
+
   app.use(
     "/graphql",
     expressMiddleware(server, {
       context: async ({ req }) => {
         const token = req.headers.authorization || "";
         const user = await getUserFromToken(token);
-        
-        // Pass the IP address into the context for rate limiting
-        return { 
+        return {
           user,
-          ip: req.ip || req.connection.remoteAddress 
+          ip: req.ip || req.connection.remoteAddress,
         };
       },
     })
@@ -91,5 +86,13 @@ app.get("/health", (req, res) => {
     mode: "GraphQL",
   });
 });
+
+// ── HanapGawa REST API — mounted at /api/v1, no collision with /graphql ──────
+const hanapgawaApiRouter = require("./routes/api-v1");
+app.use("/api/v1", hanapgawaApiRouter);
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.use(notFoundMiddleware);
+app.use(errorMiddleware);
 
 module.exports = app;
