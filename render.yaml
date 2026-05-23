@@ -17,9 +17,9 @@ services:
         sync: false
       - key: NEO4J_PASSWORD
         sync: false
-      - key: HANAPGAWA_POSTGRES_URL
+      - key: POSTGRES_URL
         sync: false
-      - key: HANAPGAWA_POSTGRES_SSL
+      - key: POSTGRES_SSL
         value: "true"
       - key: MONGODB_URL
         sync: false

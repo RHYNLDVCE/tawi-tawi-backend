@@ -26,8 +26,8 @@ const env = {
   GATEWAY_INTERNAL_SECRET: process.env.GATEWAY_INTERNAL_SECRET,
 
   // ── HanapGawa integration (all optional — server starts without them) ────────
-  HANAPGAWA_POSTGRES_URL: process.env.HANAPGAWA_POSTGRES_URL || null,
-  HANAPGAWA_POSTGRES_SSL: process.env.HANAPGAWA_POSTGRES_SSL === "true",
+  HANAPGAWA_POSTGRES_URL: process.env.POSTGRES_URL || null,
+  HANAPGAWA_POSTGRES_SSL: process.env.POSTGRES_SSL === "true",
 
   MONGODB_URL:     process.env.MONGODB_URL     || null,
   MONGODB_DB_NAME: process.env.MONGODB_DB_NAME || "hanapgawa",
@@ -40,7 +40,7 @@ const env = {
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || null,
   CLOUDINARY_API_KEY:    process.env.CLOUDINARY_API_KEY    || null,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || null,
-  LIVEKIT_URL:           process.env.LIVEKIT_URL           || null,
+  LIVEKIT_URL:           process.env.LIVEKIT_URL || process.env.LIVEKIT_UR || null,
   LIVEKIT_API_KEY:       process.env.LIVEKIT_API_KEY       || null,
   LIVEKIT_API_SECRET:    process.env.LIVEKIT_API_SECRET    || null,
 };
