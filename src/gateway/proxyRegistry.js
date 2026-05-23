@@ -42,7 +42,8 @@ function setupProxies(app) {
   const services = [
     { name: "hanapgawa", url: env.HANAPGAWA_SERVICE_URL || "http://localhost:4000" },
     { name: "transportation", url: env.TRANSPORT_SERVICE_URL || "http://localhost:4001" },
-    { name: "tourism", url: env.TOURISM_SERVICE_URL || "http://localhost:4002" }
+    { name: "tourism", url: env.TOURISM_SERVICE_URL || "http://localhost:4002" },
+    { name: "shu", url: env.SHU_SERVICE_URL || "http://localhost:4003" }
   ];
 
   services.forEach((service) => {
