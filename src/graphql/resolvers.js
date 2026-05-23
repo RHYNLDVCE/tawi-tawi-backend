@@ -34,35 +34,36 @@ const resolvers = {
     },
   },
   Mutation: {
-    register: async (_, args) => {
+    // Extract context and pass context.privateKey down
+    register: async (_, args, context) => {
       const validation = validateRegister(args);
       if (!validation.isValid) throw new AppError(validation.errors[0], 400);
       
-      const result = await authService.registerPublicUser(validation.value);
+      const result = await authService.registerPublicUser(validation.value, context.privateKey);
       logger.info("New user registered via GraphQL", { userId: result.user.id });
       return result;
     },
-    login: async (_, args) => {
+    login: async (_, args, context) => {
       const validation = validateLogin(args);
       if (!validation.isValid) throw new AppError(validation.errors[0], 400);
       
-      const result = await authService.loginPublicUser(validation.value);
+      const result = await authService.loginPublicUser(validation.value, context.privateKey);
       logger.info("User logged in via GraphQL", { userId: result.user.id });
       return result;
     },
-    googleLogin: async (_, args) => {
+    googleLogin: async (_, args, context) => {
       const validation = validateGoogleLogin(args);
       if (!validation.isValid) throw new AppError(validation.errors[0], 400);
       
-      const result = await authService.loginWithGoogle(validation.value.idToken);
+      const result = await authService.loginWithGoogle(validation.value.idToken, context.privateKey);
       logger.info("User logged in via Google (GraphQL)", { userId: result.user.id });
       return result;
     },
-    metaLogin: async (_, args) => {
+    metaLogin: async (_, args, context) => {
       const validation = validateMetaLogin(args);
       if (!validation.isValid) throw new AppError(validation.errors[0], 400);
       
-      const result = await authService.loginWithMeta(validation.value.accessToken);
+      const result = await authService.loginWithMeta(validation.value.accessToken, context.privateKey);
       logger.info("User logged in via Meta (GraphQL)", { userId: result.user.id });
       return result;
     },

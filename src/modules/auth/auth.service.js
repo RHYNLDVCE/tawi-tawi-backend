@@ -19,7 +19,8 @@ const { serializeUser } = require("../users/user.serializer");
 const { verifyGoogleIdToken } = require("./providers/google.provider");
 const { verifyMetaAccessToken } = require("./providers/meta.provider");
 
-async function registerPublicUser(registerData) {
+// Accept privateKey from resolvers
+async function registerPublicUser(registerData, privateKey) {
   const existingUser = await findUserByEmail(registerData.email);
 
   if (existingUser) {
@@ -41,9 +42,10 @@ async function registerPublicUser(registerData) {
 
   const user = serializeUser(userNode);
 
+  // Pass privateKey to the utility
   const token = generateToken({
     userId: user.id,
-  });
+  }, privateKey);
 
   return {
     token,
@@ -51,7 +53,8 @@ async function registerPublicUser(registerData) {
   };
 }
 
-async function loginPublicUser(loginData) {
+// Accept privateKey from resolvers
+async function loginPublicUser(loginData, privateKey) {
   const userNode = await findUserByEmail(loginData.email);
 
   if (!userNode) {
@@ -77,9 +80,10 @@ async function loginPublicUser(loginData) {
     throw new AppError("Invalid email or password.", 401);
   }
 
+  // Pass privateKey to the utility
   const token = generateToken({
     userId: user.id,
-  });
+  }, privateKey);
 
   return {
     token,
@@ -87,7 +91,8 @@ async function loginPublicUser(loginData) {
   };
 }
 
-async function loginWithProvider(providerUser) {
+// Accept privateKey and pass it down
+async function loginWithProvider(providerUser, privateKey) {
   let userNode = await findUserByAuthIdentity(
     providerUser.provider,
     providerUser.providerUserId
@@ -123,9 +128,10 @@ async function loginWithProvider(providerUser) {
 
   const user = serializeUser(userNode);
 
+  // Pass privateKey to the utility
   const token = generateToken({
     userId: user.id,
-  });
+  }, privateKey);
 
   return {
     token,
@@ -133,14 +139,16 @@ async function loginWithProvider(providerUser) {
   };
 }
 
-async function loginWithGoogle(idToken) {
+// Accept privateKey from resolvers and pass to loginWithProvider
+async function loginWithGoogle(idToken, privateKey) {
   const googleUser = await verifyGoogleIdToken(idToken);
-  return loginWithProvider(googleUser);
+  return loginWithProvider(googleUser, privateKey);
 }
 
-async function loginWithMeta(accessToken) {
+// Accept privateKey from resolvers and pass to loginWithProvider
+async function loginWithMeta(accessToken, privateKey) {
   const metaUser = await verifyMetaAccessToken(accessToken);
-  return loginWithProvider(metaUser);
+  return loginWithProvider(metaUser, privateKey);
 }
 
 async function logoutPublicUser() {

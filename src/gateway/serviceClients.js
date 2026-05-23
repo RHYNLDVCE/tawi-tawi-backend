@@ -21,6 +21,10 @@ const SERVICES = {
     url: env.TOURISM_SERVICE_URL,
     internalSecret: env.GATEWAY_INTERNAL_SECRET,
   },
+  hanapgawa: {
+    url: env.HANAPGAWA_SERVICE_URL,
+    internalSecret: env.GATEWAY_INTERNAL_SECRET,
+  },
 };
 
 async function checkUserInExternalService(serviceName, user) {

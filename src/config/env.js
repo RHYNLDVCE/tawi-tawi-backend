@@ -22,6 +22,10 @@ const env = {
 
   TRANSPORT_SERVICE_URL: process.env.TRANSPORT_SERVICE_URL,
   TOURISM_SERVICE_URL: process.env.TOURISM_SERVICE_URL,
+  
+  // Newly added HanapGawa Microservice URL
+  HANAPGAWA_SERVICE_URL: process.env.HANAPGAWA_SERVICE_URL,
+  
   GATEWAY_INTERNAL_SECRET: process.env.GATEWAY_INTERNAL_SECRET,
 };
 
