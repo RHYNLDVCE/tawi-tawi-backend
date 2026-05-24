@@ -8,6 +8,7 @@ const { expressMiddleware } = require("@as-integrations/express5");
 const jwt = require("jsonwebtoken");
 const depthLimit = require("graphql-depth-limit");
 const jose = require("node-jose");
+const axios = require("axios");
 
 const env = require("./config/env");
 const typeDefs = require("./graphql/typeDefs");
@@ -151,6 +152,65 @@ app.get("/health", (req, res) => {
   });
 });
 
+
+const buildServiceUrl = (baseUrl, path) => {//lutz na add kulang
+    return `${String(baseUrl || "").replace(/\/+$/, "")}${path}`;
+  };
+
+  // Dedicated SHU appointment forwarder.
+  // This avoids POST body issues in the shared proxy middleware.
+  // Flutter -> Tawi-Tawi Backend -> RHU Backend
+  app.post(
+    "/api/shu/appointments",
+    express.json({ limit: "10mb" }),
+    async (req, res) => {
+      try {
+        if (!env.SHU_SERVICE_URL) {
+          return res.status(500).json({
+            success: false,
+            message: "SHU_SERVICE_URL is missing in Tawi-Tawi backend environment.",
+          });
+        }
+
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader) {
+          return res.status(401).json({
+            success: false,
+            message: "Authentication token is missing.",
+          });
+        }
+
+        const targetUrl = buildServiceUrl(
+          env.SHU_SERVICE_URL,
+          "/api/v1/appointments"
+        );
+
+        const response = await axios.post(targetUrl, req.body, {
+          timeout: 30000,
+          validateStatus: () => true,
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: authHeader,
+            "X-Internal-Gateway-Secret": env.GATEWAY_INTERNAL_SECRET,
+          },
+        });
+
+        return res.status(response.status).json(response.data);
+      } catch (error) {
+        logger.error("SHU appointment forwarder failed", {
+          message: error.message,
+        });
+
+        return res.status(502).json({
+          success: false,
+          message: "Unable to submit appointment request through SHU gateway.",
+          error: error.message,
+        });
+      }
+    }
+  );
 // Single definition of the startup sequence
 async function startGateway() {
   await initializeSecurityKeys();
