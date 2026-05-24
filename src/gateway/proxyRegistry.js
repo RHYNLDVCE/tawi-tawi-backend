@@ -1,4 +1,4 @@
-const { createProxyMiddleware } = require("http-proxy-middleware");
+const {createProxyMiddleware,fixRequestBody,} = require("http-proxy-middleware");//ctrl+F 'lutz' need ko para sa post ko
 const jwt = require("jsonwebtoken");
 const NodeCache = require("node-cache");
 const env = require("../config/env");
@@ -24,16 +24,31 @@ function createServiceProxy(serviceName, targetUrl, targetPrefix) {
     pathRewrite: (path, req) => {
       return req.originalUrl.replace(`/api/${serviceName}`, targetPrefix);
     },
-    onProxyReq: (proxyReq, req, res) => {
+    onProxyReq: (proxyReq, req, res) => {//ctrl+F 'lutz' need ko para sa post ko
       if (req.headers.authorization) {
         proxyReq.setHeader("Authorization", req.headers.authorization);
       }
-      
+
       if (env.GATEWAY_INTERNAL_SECRET) {
-        proxyReq.setHeader("X-Internal-Gateway-Secret", env.GATEWAY_INTERNAL_SECRET);
+        proxyReq.setHeader(
+          "X-Internal-Gateway-Secret",
+          env.GATEWAY_INTERNAL_SECRET
+        );
       }
-      
-      logger.info(`[${serviceName.toUpperCase()}] Proxying request: ${req.method} ${req.originalUrl.replace(`/api/${serviceName}`, targetPrefix)}`);
+
+      proxyReq.setHeader("Accept", "application/json");
+
+      // IMPORTANT:
+      // Fixes POST/PUT/PATCH body forwarding through the proxy.
+      // Without this, POST /api/shu/appointments can hang and return 504.
+      fixRequestBody(proxyReq, req);
+
+      logger.info(
+        `[${serviceName.toUpperCase()}] Proxying request: ${req.method} ${req.originalUrl.replace(
+          `/api/${serviceName}`,
+          targetPrefix
+        )}`
+      );
     },
     onError: (err, req, res) => {
       logger.error(`[${serviceName.toUpperCase()}] Proxy routing failed`, { error: err.message });
