@@ -1,4 +1,5 @@
 const {createProxyMiddleware,fixRequestBody,} = require("http-proxy-middleware");//ctrl+F 'lutz' need ko para sa post ko
+const { createProxyMiddleware } = require("http-proxy-middleware");
 const jwt = require("jsonwebtoken");
 const NodeCache = require("node-cache");
 const env = require("../config/env");
@@ -18,42 +19,52 @@ function createServiceProxy(serviceName, targetUrl, targetPrefix) {
     return null;
   }
 
-  return createProxyMiddleware({
+    const proxyReqHandler = handleProxyRequest(serviceName, targetPrefix);
+
+  return createProxyMiddleware({//ctrl+F 'lutz' need ko para sa post ko 
     target,
     changeOrigin: true,
+    proxyTimeout: 30000,
+    timeout: 30000,
+
     pathRewrite: (path, req) => {
       return req.originalUrl.replace(`/api/${serviceName}`, targetPrefix);
     },
-    onProxyReq: (proxyReq, req, res) => {//ctrl+F 'lutz' need ko para sa post ko
-      if (req.headers.authorization) {
-        proxyReq.setHeader("Authorization", req.headers.authorization);
-      }
 
-      if (env.GATEWAY_INTERNAL_SECRET) {
-        proxyReq.setHeader(
-          "X-Internal-Gateway-Secret",
-          env.GATEWAY_INTERNAL_SECRET
-        );
-      }
+    // For newer http-proxy-middleware versions.
+    on: {
+      proxyReq: proxyReqHandler,
+      error: (err, req, res) => {
+        logger.error(`[${serviceName.toUpperCase()}] Proxy routing failed`, {
+          error: err.message,
+        });
 
-      proxyReq.setHeader("Accept", "application/json");
-
-      // IMPORTANT:
-      // Fixes POST/PUT/PATCH body forwarding through the proxy.
-      // Without this, POST /api/shu/appointments can hang and return 504.
-      fixRequestBody(proxyReq, req);
-
-      logger.info(
-        `[${serviceName.toUpperCase()}] Proxying request: ${req.method} ${req.originalUrl.replace(
-          `/api/${serviceName}`,
-          targetPrefix
-        )}`
-      );
+        if (!res.headersSent) {
+          res.status(502).json({
+            success: false,
+            message: `${serviceName} service is currently unavailable.`,
+            error: err.message,
+          });
+        }
+      },
     },
+
+    // For older http-proxy-middleware versions.
+    onProxyReq: proxyReqHandler,
+
     onError: (err, req, res) => {
-      logger.error(`[${serviceName.toUpperCase()}] Proxy routing failed`, { error: err.message });
-      res.status(502).json({ error: `${serviceName} service is currently unavailable.` });
-    }
+      logger.error(`[${serviceName.toUpperCase()}] Proxy routing failed`, {
+        error: err.message,
+      });
+
+      if (!res.headersSent) {
+        res.status(502).json({
+          success: false,
+          message: `${serviceName} service is currently unavailable.`,
+          error: err.message,
+        });
+      }
+    },
   });
 }
 
@@ -133,4 +144,44 @@ function setupProxies(app, privateKey, publicKey) {
   });
 }
 
+
+function handleProxyRequest(serviceName, targetPrefix) {
+  return (proxyReq, req, res) => {
+    if (req.headers.authorization) {
+      proxyReq.setHeader("Authorization", req.headers.authorization);
+    }
+
+    if (env.GATEWAY_INTERNAL_SECRET) {
+      proxyReq.setHeader(
+        "X-Internal-Gateway-Secret",
+        env.GATEWAY_INTERNAL_SECRET
+      );
+    }
+
+    proxyReq.setHeader("Accept", "application/json");
+
+    // Fix POST/PUT/PATCH body forwarding if Express already parsed req.body.
+    // If req.body is undefined, the original request stream will pass normally.
+    if (
+      req.body &&
+      ["POST", "PUT", "PATCH"].includes(req.method.toUpperCase())
+    ) {
+      const bodyData =
+        typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+
+      proxyReq.setHeader("Content-Type", "application/json");
+      proxyReq.setHeader("Content-Length", Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+
+    logger.info(
+      `[${serviceName.toUpperCase()}] Proxying request: ${
+        req.method
+      } ${req.originalUrl.replace(`/api/${serviceName}`, targetPrefix)}`
+    );
+  };
+}
+
+
 module.exports = setupProxies;
+
