@@ -71,6 +71,11 @@ function setupProxies(app, privateKey, publicKey) {
           // So for SHU only, verify the token here but do not translate it.
           // Other services will continue using the existing token translation flow.
           if (service.name === "shu") {
+
+            if (env.GATEWAY_INTERNAL_SECRET) {
+              req.headers["x-internal-gateway-secret"] = env.GATEWAY_INTERNAL_SECRET;
+              req.headers["X-Internal-Gateway-Secret"] = env.GATEWAY_INTERNAL_SECRET;
+            }
             return next();
           }
 
