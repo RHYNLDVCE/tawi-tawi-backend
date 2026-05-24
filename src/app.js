@@ -22,9 +22,33 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-// Hide Express fingerprint
-app.use(helmet());
-
+// --- SECURE CONFIGURED HELMET ---
+app.use(
+  helmet({
+    crossOriginEmbedderPolicy: false, // Required for Apollo Sandbox to render
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        // Trust Apollo Sandbox and Tailwind CDN scripts
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://cdn.tailwindcss.com",
+          "https://embeddable-sandbox.cdn.apollographql.com"
+        ],
+        // Allow inline styles injected by Tailwind
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'"
+        ],
+        // Allow Apollo Sandbox to load external images and connect to its API
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'", "https:", "wss:"],
+        frameSrc: ["'self'", "https://sandbox.embed.apollographql.com"],
+      },
+    },
+  })
+);
 app.use(cors({
   origin: env.CORS_ORIGIN === "*" ? "*" : env.CORS_ORIGIN.split(","),
   credentials: true,
