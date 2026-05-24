@@ -29,6 +29,7 @@ const env = {
   // Social Health Update / RHU backend service URL
   SHU_SERVICE_URL: process.env.SHU_SERVICE_URL,
 
+
   GATEWAY_INTERNAL_SECRET: process.env.GATEWAY_INTERNAL_SECRET,
 };
 

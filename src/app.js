@@ -1,4 +1,6 @@
 const express = require("express");
+const helmet = require("helmet"); // Added missing import
+const rateLimit = require("express-rate-limit"); // Added for brute-force protection
 const cors = require("cors");
 const path = require("path");
 const { ApolloServer } = require("@apollo/server");
@@ -14,20 +16,45 @@ const { findUserById } = require("./modules/users/user.repository");
 const { serializeUser } = require("./modules/users/user.serializer");
 const USER_STATUS = require("./constants/userStatus");
 const logger = require("./utils/logger");
-const setupProxies = require("./gateway/proxyRegistry"); // Import the dynamic proxy registry
+const setupProxies = require("./gateway/proxyRegistry"); 
 
 const app = express();
 
-// Trust the reverse proxy if running behind a load balancer or API Gateway
 app.set("trust proxy", 1);
 
+// --- SECURE CONFIGURED HELMET ---
+app.use(
+  helmet({
+    crossOriginEmbedderPolicy: false, // Required for Apollo Sandbox to render
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        // Trust Apollo Sandbox and Tailwind CDN scripts
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://cdn.tailwindcss.com",
+          "https://embeddable-sandbox.cdn.apollographql.com"
+        ],
+        // Allow inline styles injected by Tailwind
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'"
+        ],
+        // Allow Apollo Sandbox to load external images and connect to its API
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'", "https:", "wss:"],
+        frameSrc: ["'self'", "https://sandbox.embed.apollographql.com"],
+      },
+    },
+  })
+);
 app.use(cors({
   origin: env.CORS_ORIGIN === "*" ? "*" : env.CORS_ORIGIN.split(","),
   credentials: true,
 }));
 
 // --- JWKS ENTERPRISE SECURITY SETUP ---
-// Generates an RSA key pair on server startup for token signing and verification.
 const keystore = jose.JWK.createKeyStore();
 let currentPublicKeyPem = null;
 let currentPrivateKeyPem = null;
@@ -42,28 +69,21 @@ async function initializeSecurityKeys() {
   currentPublicKeyPem = key.toPEM(false);
   logger.info("Enterprise JWKS RSA key pair initialized");
 }
-initializeSecurityKeys();
 
-// Exposes the public key for microservices to fetch automatically
 app.get("/.well-known/jwks.json", (req, res) => {
   res.json(keystore.toJSON());
 });
 // --------------------------------------
 
-// Initialize all microservice proxies dynamically via the registry
-setupProxies(app);
-
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "../public")));
 
-// Extracts user for GraphQL Context
 const getUserFromToken = async (token) => {
   try {
     if (!token) return null;
-    if (!currentPublicKeyPem) return null; // Failsafe if keys are still generating
+    if (!currentPublicKeyPem) return null; 
     
-    // Verify using the RSA Public Key instead of the HS256 Secret
     const decoded = jwt.verify(token.replace("Bearer ", ""), currentPublicKeyPem, { algorithms: ["RS256"] });
     const userNode = await findUserById(decoded.userId);
     
@@ -78,7 +98,13 @@ const getUserFromToken = async (token) => {
   }
 };
 
-// Initializes Apollo Server
+// --- RATE LIMITER FOR GRAPHQL ---
+const graphqlLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per 15 mins
+  message: { error: "Too many requests from this IP, please try again later." }
+});
+
 async function startApolloServer() {
   const server = new ApolloServer({
     typeDefs,
@@ -95,7 +121,9 @@ async function startApolloServer() {
 
   await server.start();
   
-  // Mounts GraphQL on /graphql endpoint using expressMiddleware
+  // Apply the rate limiter directly to the GraphQL endpoint
+  app.use("/graphql", graphqlLimiter);
+
   app.use(
     "/graphql",
     expressMiddleware(server, {
@@ -103,7 +131,6 @@ async function startApolloServer() {
         const token = req.headers.authorization || "";
         const user = await getUserFromToken(token);
         
-        // Pass the IP address and Private Key into the context
         return { 
           user,
           ip: req.ip || req.connection.remoteAddress,
@@ -116,8 +143,6 @@ async function startApolloServer() {
   logger.info("Apollo GraphQL gateway mounted at /graphql");
 }
 
-startApolloServer();
-
 app.get("/health", (req, res) => {
   res.json({
     success: true,
@@ -126,4 +151,15 @@ app.get("/health", (req, res) => {
   });
 });
 
-module.exports = app;
+// Single definition of the startup sequence
+async function startGateway() {
+  await initializeSecurityKeys();
+  setupProxies(app, currentPrivateKeyPem, currentPublicKeyPem);
+  await startApolloServer();
+}
+
+// Export the app and the startup function cleanly to server.js
+module.exports = {
+  app,
+  startGateway
+};

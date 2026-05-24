@@ -69,7 +69,10 @@ async function checkUserInExternalService(serviceName, user) {
       externalUserId: response.data?.externalUserId || null,
     };
   } catch (error) {
-    logger.error(`B2B handshake failed for service: ${serviceName}`, error);
+    // Extract precise Axios network or response error details
+    const issue = error.response ? `Status: ${error.response.status}` : error.message;
+    logger.error(`B2B handshake failed for service: ${serviceName}. Reason: ${issue}`, { error: error.message });
+    
     return {
       isLinked: false,
       requiresRegistration: false,
@@ -78,7 +81,6 @@ async function checkUserInExternalService(serviceName, user) {
   }
 }
 
-// Function to handle the explicit registration flow with extra fields
 async function registerUserInExternalService(serviceName, user, extraDataString) {
   const serviceConfig = SERVICES[serviceName.toLowerCase()];
   
@@ -98,7 +100,7 @@ async function registerUserInExternalService(serviceName, user, extraDataString)
         tawiTawiUserId: user.id,
         email: user.email,
         fullName: user.fullName,
-        ...extraFields // Spread the extra fields into the body
+        ...extraFields 
       },
       { 
         headers: { 
@@ -108,10 +110,18 @@ async function registerUserInExternalService(serviceName, user, extraDataString)
       }
     );
 
-    return response.data?.isLinked || false;
+    // Return an object containing both the success status and the new external ID
+    return {
+      isLinked: response.data?.isLinked || false,
+      externalUserId: response.data?.externalUserId || null,
+    };
   } catch (error) {
-    logger.error(`B2B registration failed for service: ${serviceName}`, error);
-    throw new AppError(`Failed to register in ${serviceName}.`, 500);
+    // Check if it is an Axios network error vs a standard error
+    const issue = error.response ? `Status: ${error.response.status}` : error.message;
+    logger.error(`B2B registration failed for service: ${serviceName}. Reason: ${issue}`, { error: error.message });
+    
+    // Throw a 503 Service Unavailable so the client knows it is a network/target issue
+    throw new AppError(`The ${serviceName} service is currently unreachable. Please try again later.`, 503);
   }
 }
 
