@@ -64,8 +64,17 @@ function setupProxies(app, privateKey, publicKey) {
           // Do not use jwt.decode on untrusted input
           const decoded = jwt.verify(incomingToken, publicKey, { algorithms: ["RS256"] });
           
-          if (decoded && decoded.userId) {
-            const cacheKey = `${decoded.userId}-${service.name}`;
+          if (decoded && decoded.userId) {// ni add ko to si lutz to para sa auth token ng service ko
+          // IMPORTANT:
+          // SHU/RHU backend already accepts the original Tawi-Tawi token
+          // when the request includes X-Internal-Gateway-Secret.
+          // So for SHU only, verify the token here but do not translate it.
+          // Other services will continue using the existing token translation flow.
+          if (service.name === "shu") {
+            return next();
+          }
+
+          const cacheKey = `${decoded.userId}-${service.name}`;
             
             // PERFORMANCE FIX: Check cache first to avoid hammering Neo4j
             let localId = mappingCache.get(cacheKey);
