@@ -26,6 +26,9 @@ const env = {
   // Newly added HanapGawa Microservice URL
   HANAPGAWA_SERVICE_URL: process.env.HANAPGAWA_SERVICE_URL,
   
+  // Social Health Update / RHU backend service URL
+  SHU_SERVICE_URL: process.env.SHU_SERVICE_URL,
+
   GATEWAY_INTERNAL_SECRET: process.env.GATEWAY_INTERNAL_SECRET,
 };
 
