@@ -1,5 +1,5 @@
-const {createProxyMiddleware,fixRequestBody,} = require("http-proxy-middleware");//ctrl+F 'lutz' need ko para sa post ko
 const { createProxyMiddleware } = require("http-proxy-middleware");
+const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const NodeCache = require("node-cache");
 const env = require("../config/env");
@@ -7,6 +7,9 @@ const logger = require("../utils/logger");
 const { getLinkedServiceId } = require("../modules/users/user.repository");
 const generateToken = require("../utils/generateToken");
 
+const buildServiceUrl = (baseUrl, path) => {//ctrl+F 'lutz' need ko para sa post ko 
+  return `${String(baseUrl || "").replace(/\/+$/, "")}${path}`;
+};
 // Initialize an in-memory cache with a 5-minute Time-To-Live (TTL)
 const mappingCache = new NodeCache({ stdTTL: 300 });
 
@@ -135,12 +138,64 @@ function setupProxies(app, privateKey, publicKey) {
         return res.status(401).json({ error: "Unauthorized or expired token." });
       }
     };
+    
+      if (service.name === "shu") {
+    app.post("/api/shu/appointments", tokenTranslator, async (req, res) => {
+      try {
+        if (!env.SHU_SERVICE_URL) {
+          return res.status(500).json({
+            success: false,
+            message: "SHU_SERVICE_URL is missing in Tawi-Tawi backend environment.",
+          });
+        }
 
-    const proxy = createServiceProxy(service.name, service.url, service.prefix);
-    if (proxy) {
-      app.use(`/api/${service.name}`, tokenTranslator, proxy);
-      logger.info(`Mounted proxy route: /api/${service.name} -> ${service.url}`);
-    }
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader) {
+          return res.status(401).json({
+            success: false,
+            message: "Authentication token is missing.",
+          });
+        }
+
+        const targetUrl = buildServiceUrl(
+          env.SHU_SERVICE_URL,
+          "/api/v1/appointments"
+        );
+
+        const response = await axios.post(targetUrl, req.body, {
+          timeout: 30000,
+          validateStatus: () => true,
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: authHeader,
+            "X-Internal-Gateway-Secret": env.GATEWAY_INTERNAL_SECRET,
+          },
+        });
+
+        return res.status(response.status).json(response.data);
+      } catch (error) {
+        logger.error("SHU appointment forwarder failed", {
+          message: error.message,
+        });
+
+        return res.status(502).json({
+          success: false,
+          message: "Unable to submit appointment request through SHU gateway.",
+          error: error.message,
+        });
+      }
+    });
+
+    logger.info("Mounted direct route: POST /api/shu/appointments -> SHU appointments");
+  }
+
+  const proxy = createServiceProxy(service.name, service.url, service.prefix);
+  if (proxy) {
+    app.use(`/api/${service.name}`, tokenTranslator, proxy);
+    logger.info(`Mounted proxy route: /api/${service.name} -> ${service.url}`);
+  }
   });
 }
 
