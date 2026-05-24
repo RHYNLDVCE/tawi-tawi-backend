@@ -103,9 +103,64 @@ async function updateUserById(id, updateData) {
   }
 }
 
+
+async function linkServiceToUser(userId, serviceName, localId) {
+  const session = getSession();
+
+  try {
+    const result = await session.executeWrite((tx) =>
+      tx.run(
+        `
+        MATCH (u:User { id: $userId })
+        // Create the service account node if it doesn't exist
+        MERGE (s:ServiceAccount { service: $serviceName, localId: $localId })
+        // Create the relationship
+        MERGE (u)-[r:LINKED_TO]->(s)
+        RETURN s
+        `,
+        {
+          userId,
+          serviceName: serviceName.toLowerCase(),
+          localId,
+        }
+      )
+    );
+
+    return result.records[0]?.get("s") || null;
+  } finally {
+    await session.close();
+  }
+}
+
+async function getLinkedServiceId(userId, serviceName) {
+  const session = getSession();
+
+  try {
+    const result = await session.executeRead((tx) =>
+      tx.run(
+        `
+        MATCH (u:User { id: $userId })-[:LINKED_TO]->(s:ServiceAccount { service: $serviceName })
+        RETURN s.localId AS localId
+        LIMIT 1
+        `,
+        {
+          userId,
+          serviceName: serviceName.toLowerCase(),
+        }
+      )
+    );
+
+    return result.records[0]?.get("localId") || null;
+  } finally {
+    await session.close();
+  }
+}
+
 module.exports = {
   createUser,
   findUserByEmail,
   findUserById,
   updateUserById,
+  linkServiceToUser,
+  getLinkedServiceId
 };

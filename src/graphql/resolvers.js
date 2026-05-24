@@ -9,7 +9,7 @@ const {
 } = require("../modules/auth/auth.validation");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
-
+const { linkServiceToUser } = require("../modules/users/user.repository");
 const resolvers = {
   Query: {
     me: async (_, __, context) => {
@@ -20,6 +20,11 @@ const resolvers = {
       if (!context.user) throw new AppError("Authentication required", 401);
 
       const status = await checkUserInExternalService(serviceName, context.user);
+
+      if (status.isLinked && status.externalUserId) {
+        await linkServiceToUser(context.user.id, serviceName, status.externalUserId);
+        logger.info(`Successfully linked existing native account for ${serviceName}`, { userId: context.user.id });
+      }
 
       return {
         serviceName,
@@ -67,16 +72,25 @@ const resolvers = {
       logger.info("User logged in via Meta (GraphQL)", { userId: result.user.id });
       return result;
     },
+
     registerForService: async (_, { serviceName, payload }, context) => {
       if (!context.user) throw new AppError("Authentication required", 401);
 
-      const isLinked = await registerUserInExternalService(serviceName, context.user, payload);
+      // result now contains both isLinked and externalUserId
+      const result = await registerUserInExternalService(serviceName, context.user, payload);
 
+      // Phase 2 Update: Save the mapping to Neo4j upon successful registration
+      if (result.isLinked && result.externalUserId) {
+        await linkServiceToUser(context.user.id, serviceName, result.externalUserId);
+        logger.info(`Successfully registered and linked new account for ${serviceName}`, { userId: context.user.id });
+      }
+
+      // FIX: Use result.isLinked instead of the standalone isLinked variable
       return {
         serviceName,
-        hasAccess: isLinked,
-        requiresRegistration: !isLinked, 
-        message: isLinked 
+        hasAccess: result.isLinked,
+        requiresRegistration: !result.isLinked, 
+        message: result.isLinked 
           ? `Successfully registered and linked to ${serviceName}.` 
           : `Registration failed for ${serviceName}.`
       };
