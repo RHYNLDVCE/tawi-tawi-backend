@@ -76,7 +76,7 @@ function setupProxies(app, privateKey, publicKey) {
   const services = [
     { name: "hanapgawa", url: env.HANAPGAWA_SERVICE_URL, prefix: "/api/v1" },
     { name: "transportation", url: env.TRANSPORT_SERVICE_URL, prefix: "/api" },
-    { name: "tourism", url: env.TOURISM_SERVICE_URL, prefix: "/api/v1" },
+    { name: "tourism", url: env.TOURISM_SERVICE_URL, prefix: "/api" },
     { name: "shu", url: env.SHU_SERVICE_URL, prefix: "/api/v1" }
   ];
 
