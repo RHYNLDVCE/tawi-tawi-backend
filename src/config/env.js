@@ -31,6 +31,7 @@ const env = {
 
 
   GATEWAY_INTERNAL_SECRET: process.env.GATEWAY_INTERNAL_SECRET,
+  ECOMMERCE_SERVICE_URL: process.env.ECOMMERCE_SERVICE_URL,
 };
 
 const requiredEnv = [

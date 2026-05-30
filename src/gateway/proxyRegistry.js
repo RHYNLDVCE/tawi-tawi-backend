@@ -77,7 +77,8 @@ function setupProxies(app, privateKey, publicKey) {
     { name: "hanapgawa", url: env.HANAPGAWA_SERVICE_URL, prefix: "/api/v1" },
     { name: "transportation", url: env.TRANSPORT_SERVICE_URL, prefix: "/api" },
     { name: "tourism", url: env.TOURISM_SERVICE_URL, prefix: "/api" },
-    { name: "shu", url: env.SHU_SERVICE_URL, prefix: "/api/v1" }
+    { name: "shu", url: env.SHU_SERVICE_URL, prefix: "/api/v1" },
+    { name: "ecommerce", url: env.ECOMMERCE_SERVICE_URL, prefix: "" }
   ];
 
   services.forEach((service) => {

@@ -29,6 +29,10 @@ const SERVICES = {
     url: env.SHU_SERVICE_URL,
     internalSecret: env.GATEWAY_INTERNAL_SECRET,
   },
+  ecommerce: {
+    url: env.ECOMMERCE_SERVICE_URL,
+    internalSecret: env.GATEWAY_INTERNAL_SECRET,
+  },
 };
 
 async function checkUserInExternalService(serviceName, user) {
