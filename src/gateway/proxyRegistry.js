@@ -92,7 +92,7 @@ function setupProxies(app, privateKey, publicKey) {
           
           // CRITICAL SECURITY FIX: Cryptographically verify the token signature 
           // Do not use jwt.decode on untrusted input
-          const decoded = jwt.verify(incomingToken, publicKey, { algorithms: ["RS256"] });
+          const decoded = jwt.verify(incomingToken, env.JWT_SECRET, { algorithms: ["HS256"] });
           
           if (decoded && decoded.userId) {// ni add ko to si lutz to para sa auth token ng service ko
           // IMPORTANT:
@@ -126,7 +126,7 @@ function setupProxies(app, privateKey, publicKey) {
               const translatedToken = generateToken({
                 sub: localId, 
                 email: decoded.email
-              }, privateKey);
+              });
               
               req.headers.authorization = `Bearer ${translatedToken}`;
             }
