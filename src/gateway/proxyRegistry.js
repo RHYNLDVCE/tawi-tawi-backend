@@ -125,7 +125,7 @@ function setupProxies(app, privateKey, publicKey) {
               // Mint a brand new token using the downstream service's local ID
               // MUST use GATEWAY_INTERNAL_SECRET so Zentromart can verify it
               const translatedToken = jwt.sign(
-                { sub: localId, email: decoded.email },
+                { sub: localId, email: decoded.email, role: decoded.role },
                 env.GATEWAY_INTERNAL_SECRET,
                 { algorithm: "HS256", expiresIn: "1h" }
               );

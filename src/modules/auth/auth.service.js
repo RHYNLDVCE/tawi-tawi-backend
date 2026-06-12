@@ -45,6 +45,8 @@ async function registerPublicUser(registerData, privateKey) {
   // Pass privateKey to the utility
   const token = generateToken({
     userId: user.id,
+    email: user.email,
+    role: user.role
   }, privateKey);
 
   return {
@@ -83,6 +85,8 @@ async function loginPublicUser(loginData, privateKey) {
   // Pass privateKey to the utility
   const token = generateToken({
     userId: user.id,
+    email: user.email,
+    role: user.role
   }, privateKey);
 
   return {
@@ -131,6 +135,8 @@ async function loginWithProvider(providerUser, privateKey) {
   // Pass privateKey to the utility
   const token = generateToken({
     userId: user.id,
+    email: user.email,
+    role: user.role
   }, privateKey);
 
   return {
