@@ -71,6 +71,7 @@ async function checkUserInExternalService(serviceName, user) {
       isLinked: response.data?.isLinked || false,
       requiresRegistration: response.data?.requiresRegistration || false,
       externalUserId: response.data?.externalUserId || null,
+      role: response.data?.role || null,
     };
   } catch (error) {
     // Extract precise Axios network or response error details
@@ -81,6 +82,7 @@ async function checkUserInExternalService(serviceName, user) {
       isLinked: false,
       requiresRegistration: false,
       externalUserId: null,
+      role: null,
     };
   }
 }
