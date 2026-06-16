@@ -8,7 +8,7 @@ const https = require("https");
 const axiosInstance = axios.create({
   httpAgent: new http.Agent({ keepAlive: true }),
   httpsAgent: new https.Agent({ keepAlive: true }),
-  timeout: 5000,
+  timeout: 60000,
 });
 
 // Map available microservices and associated configurations
@@ -78,12 +78,8 @@ async function checkUserInExternalService(serviceName, user) {
     const issue = error.response ? `Status: ${error.response.status}` : error.message;
     logger.error(`B2B handshake failed for service: ${serviceName}. Reason: ${issue}`, { error: error.message });
     
-    return {
-      isLinked: false,
-      requiresRegistration: false,
-      externalUserId: null,
-      role: null,
-    };
+    // Throw a 503 Service Unavailable so the client knows it is a network/target issue
+    throw new AppError(`The ${serviceName} service is currently unreachable. Please try again later.`, 503);
   }
 }
 
