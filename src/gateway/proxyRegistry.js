@@ -92,7 +92,7 @@ function setupProxies(app, privateKey, publicKey) {
           
           // CRITICAL SECURITY FIX: Cryptographically verify the token signature 
           // Do not use jwt.decode on untrusted input
-          const decoded = jwt.verify(incomingToken, publicKey, { algorithms: ["RS256"] });
+          const decoded = jwt.verify(incomingToken, env.JWT_SECRET, { algorithms: ["HS256"] });
           
           if (decoded && decoded.userId) {
             // IMPORTANT:
@@ -121,10 +121,12 @@ function setupProxies(app, privateKey, publicKey) {
             
             if (localId) {
               // Mint a brand new token using the downstream service's local ID
-              const translatedToken = generateToken({
-                sub: localId, 
-                email: decoded.email
-              }, privateKey);
+              // MUST use GATEWAY_INTERNAL_SECRET so Zentromart can verify it
+              const translatedToken = jwt.sign(
+                { sub: localId, email: decoded.email, role: decoded.role },
+                env.GATEWAY_INTERNAL_SECRET,
+                { algorithm: "HS256", expiresIn: "1h" }
+              );
               
               req.headers.authorization = `Bearer ${translatedToken}`;
             }

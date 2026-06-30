@@ -16,6 +16,7 @@ const typeDefs = `#graphql
     hasAccess: Boolean!
     requiresRegistration: Boolean! 
     message: String!
+    role: String
   }
 
   type Query {

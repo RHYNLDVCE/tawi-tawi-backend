@@ -30,6 +30,7 @@ const resolvers = {
         serviceName,
         hasAccess: status.isLinked,
         requiresRegistration: status.requiresRegistration,
+        role: status.role,
         message: status.isLinked 
           ? `Access granted to ${serviceName} service.` 
           : status.requiresRegistration 

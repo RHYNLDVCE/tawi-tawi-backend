@@ -8,7 +8,7 @@ const https = require("https");
 const axiosInstance = axios.create({
   httpAgent: new http.Agent({ keepAlive: true }),
   httpsAgent: new https.Agent({ keepAlive: true }),
-  timeout: 5000,
+  timeout: 60000,
 });
 
 const SERVICES = {
@@ -70,21 +70,18 @@ async function checkUserInExternalService(serviceName, user) {
       isLinked: response.data?.isLinked || false,
       requiresRegistration: response.data?.requiresRegistration || false,
       externalUserId: response.data?.externalUserId || null,
+      role: response.data?.role || null,
     };
   } catch (error) {
     // Extract precise Axios network or response error details
     const issue = error.response ? `Status: ${error.response.status}` : error.message;
     logger.error(`B2B handshake failed for service: ${serviceName}. Reason: ${issue}`, { error: error.message });
     
-    if (error.response && error.response.status === 404) {
-      return {
-        isLinked: false,
-        requiresRegistration: false,
-        externalUserId: null,
-      };
-    }
-    
-    throw new AppError(`The ${serviceName} service is currently unreachable or returned an error during verification.`, 503);
+    return {
+      isLinked: false,
+      requiresRegistration: false,
+      externalUserId: null,
+    };
   }
 }
 

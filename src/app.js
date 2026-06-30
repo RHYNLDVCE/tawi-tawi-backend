@@ -98,13 +98,9 @@ app.use(express.static(path.join(__dirname, "../public")));
 const getUserFromToken = async (token) => {
   try {
     if (!token) return null;
-    if (!currentPublicKeyPem) return null; 
+    if (!env.JWT_SECRET) return null; 
     
     const decoded = jwt.verify(token.replace("Bearer ", ""), currentPublicKeyPem, { algorithms: ["RS256"] });
-    
-    const cachedUser = authCache.get(decoded.userId);
-    if (cachedUser !== undefined) return cachedUser;
-
     const userNode = await findUserById(decoded.userId);
     
     if (!userNode) {

@@ -1,3 +1,4 @@
+// Entry point
 const { app, startGateway } = require("./app");
 const env = require("./config/env");
 const logger = require("./utils/logger");
