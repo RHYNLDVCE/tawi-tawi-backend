@@ -9,8 +9,10 @@ const jwt = require("jsonwebtoken");
 const depthLimit = require("graphql-depth-limit");
 const jose = require("node-jose");
 const axios = require("axios");
+const NodeCache = require("node-cache");
 
 const env = require("./config/env");
+const authCache = new NodeCache({ stdTTL: 300 });
 const typeDefs = require("./graphql/typeDefs");
 const resolvers = require("./graphql/resolvers");
 const { findUserById } = require("./modules/users/user.repository");
@@ -61,6 +63,19 @@ let currentPublicKeyPem = null;
 let currentPrivateKeyPem = null;
 
 async function initializeSecurityKeys() {
+  if (env.GATEWAY_PRIVATE_KEY && env.GATEWAY_PUBLIC_KEY) {
+    try {
+      const key = await keystore.add(env.GATEWAY_PRIVATE_KEY, "pem");
+      currentPrivateKeyPem = key.toPEM(true);
+      currentPublicKeyPem = key.toPEM(false);
+      logger.info("Loaded Enterprise JWKS RSA key pair from environment");
+      return;
+    } catch (error) {
+      logger.error("Failed to load JWKS keys from environment. Falling back to generated keys.", { error: error.message });
+    }
+  }
+
+  logger.warn("GATEWAY_PRIVATE_KEY missing. Generating ephemeral keys. Tokens will NOT persist across restarts.");
   const key = await keystore.generate("RSA", 2048, {
     alg: "RS256",
     use: "sig",
@@ -68,7 +83,7 @@ async function initializeSecurityKeys() {
   });
   currentPrivateKeyPem = key.toPEM(true);
   currentPublicKeyPem = key.toPEM(false);
-  logger.info("Enterprise JWKS RSA key pair initialized");
+  logger.info("Ephemeral JWKS RSA key pair initialized");
 }
 
 app.get("/.well-known/jwks.json", (req, res) => {
@@ -86,13 +101,25 @@ const getUserFromToken = async (token) => {
     if (!currentPublicKeyPem) return null; 
     
     const decoded = jwt.verify(token.replace("Bearer ", ""), currentPublicKeyPem, { algorithms: ["RS256"] });
+    
+    const cachedUser = authCache.get(decoded.userId);
+    if (cachedUser !== undefined) return cachedUser;
+
     const userNode = await findUserById(decoded.userId);
     
-    if (!userNode) return null;
+    if (!userNode) {
+      authCache.set(decoded.userId, null);
+      return null;
+    }
     const user = userNode.properties;
     
-    if (user.status !== USER_STATUS.ACTIVE) return null;
-    return serializeUser(userNode);
+    if (user.status !== USER_STATUS.ACTIVE) {
+      authCache.set(decoded.userId, null);
+      return null;
+    }
+    const serializedUser = serializeUser(userNode);
+    authCache.set(decoded.userId, serializedUser);
+    return serializedUser;
   } catch (error) {
     logger.warn("GraphQL context auth failed", { message: error.message });
     return null;
@@ -153,64 +180,7 @@ app.get("/health", (req, res) => {
 });
 
 
-const buildServiceUrl = (baseUrl, path) => {//lutz na add kulang
-    return `${String(baseUrl || "").replace(/\/+$/, "")}${path}`;
-  };
 
-  // Dedicated SHU appointment forwarder.
-  // This avoids POST body issues in the shared proxy middleware.
-  // Flutter -> Tawi-Tawi Backend -> RHU Backend
-  app.post(
-    "/api/shu/appointments",
-    express.json({ limit: "10mb" }),
-    async (req, res) => {
-      try {
-        if (!env.SHU_SERVICE_URL) {
-          return res.status(500).json({
-            success: false,
-            message: "SHU_SERVICE_URL is missing in Tawi-Tawi backend environment.",
-          });
-        }
-
-        const authHeader = req.headers.authorization;
-
-        if (!authHeader) {
-          return res.status(401).json({
-            success: false,
-            message: "Authentication token is missing.",
-          });
-        }
-
-        const targetUrl = buildServiceUrl(
-          env.SHU_SERVICE_URL,
-          "/api/v1/appointments"
-        );
-
-        const response = await axios.post(targetUrl, req.body, {
-          timeout: 30000,
-          validateStatus: () => true,
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: authHeader,
-            "X-Internal-Gateway-Secret": env.GATEWAY_INTERNAL_SECRET,
-          },
-        });
-
-        return res.status(response.status).json(response.data);
-      } catch (error) {
-        logger.error("SHU appointment forwarder failed", {
-          message: error.message,
-        });
-
-        return res.status(502).json({
-          success: false,
-          message: "Unable to submit appointment request through SHU gateway.",
-          error: error.message,
-        });
-      }
-    }
-  );
 // Single definition of the startup sequence
 async function startGateway() {
   await initializeSecurityKeys();

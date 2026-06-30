@@ -32,6 +32,10 @@ const env = {
 
   GATEWAY_INTERNAL_SECRET: process.env.GATEWAY_INTERNAL_SECRET,
   ECOMMERCE_SERVICE_URL: process.env.ECOMMERCE_SERVICE_URL,
+
+  // JWKS Persistent Keys
+  GATEWAY_PRIVATE_KEY: process.env.GATEWAY_PRIVATE_KEY ? process.env.GATEWAY_PRIVATE_KEY.replace(/\\n/g, '\n') : null,
+  GATEWAY_PUBLIC_KEY: process.env.GATEWAY_PUBLIC_KEY ? process.env.GATEWAY_PUBLIC_KEY.replace(/\\n/g, '\n') : null,
 };
 
 const requiredEnv = [

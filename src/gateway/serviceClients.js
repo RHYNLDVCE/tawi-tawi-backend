@@ -11,7 +11,6 @@ const axiosInstance = axios.create({
   timeout: 5000,
 });
 
-// Map available microservices and associated configurations
 const SERVICES = {
   transportation: {
     url: env.TRANSPORT_SERVICE_URL,
@@ -77,11 +76,15 @@ async function checkUserInExternalService(serviceName, user) {
     const issue = error.response ? `Status: ${error.response.status}` : error.message;
     logger.error(`B2B handshake failed for service: ${serviceName}. Reason: ${issue}`, { error: error.message });
     
-    return {
-      isLinked: false,
-      requiresRegistration: false,
-      externalUserId: null,
-    };
+    if (error.response && error.response.status === 404) {
+      return {
+        isLinked: false,
+        requiresRegistration: false,
+        externalUserId: null,
+      };
+    }
+    
+    throw new AppError(`The ${serviceName} service is currently unreachable or returned an error during verification.`, 503);
   }
 }
 
@@ -92,12 +95,12 @@ async function registerUserInExternalService(serviceName, user, extraDataString)
     throw new AppError(`Service configuration for "${serviceName}" not found.`, 404);
   }
 
-  // Parse the JSON string of extra fields sent from the UI
-  const extraFields = JSON.parse(extraDataString || "{}");
-
-  logger.info(`Initiating B2B registration with target service: ${serviceName}`, { userId: user.id });
-
   try {
+    // Parse the JSON string of extra fields sent from the UI inside the try block
+    const extraFields = JSON.parse(extraDataString || "{}");
+
+    logger.info(`Initiating B2B registration with target service: ${serviceName}`, { userId: user.id });
+
     const response = await axiosInstance.post(
       `${serviceConfig.url}/register-user`,
       {

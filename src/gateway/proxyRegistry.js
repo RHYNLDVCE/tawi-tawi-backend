@@ -94,31 +94,29 @@ function setupProxies(app, privateKey, publicKey) {
           // Do not use jwt.decode on untrusted input
           const decoded = jwt.verify(incomingToken, publicKey, { algorithms: ["RS256"] });
           
-          if (decoded && decoded.userId) {// ni add ko to si lutz to para sa auth token ng service ko
-          // IMPORTANT:
-          // SHU/RHU backend already accepts the original Tawi-Tawi token
-          // when the request includes X-Internal-Gateway-Secret.
-          // So for SHU only, verify the token here but do not translate it.
-          // Other services will continue using the existing token translation flow.
-          if (service.name === "shu") {
-
-            if (env.GATEWAY_INTERNAL_SECRET) {
-              req.headers["x-internal-gateway-secret"] = env.GATEWAY_INTERNAL_SECRET;
-              req.headers["X-Internal-Gateway-Secret"] = env.GATEWAY_INTERNAL_SECRET;
+          if (decoded && decoded.userId) {
+            // IMPORTANT:
+            // SHU/RHU backend already accepts the original Tawi-Tawi token
+            // when the request includes X-Internal-Gateway-Secret.
+            // So for SHU only, verify the token here but do not translate it.
+            // Other services will continue using the existing token translation flow.
+            if (service.name === "shu") {
+              if (env.GATEWAY_INTERNAL_SECRET) {
+                req.headers["x-internal-gateway-secret"] = env.GATEWAY_INTERNAL_SECRET;
+                req.headers["X-Internal-Gateway-Secret"] = env.GATEWAY_INTERNAL_SECRET;
+              }
+              return next();
             }
-            return next();
-          }
 
-          const cacheKey = `${decoded.userId}-${service.name}`;
+            const cacheKey = `${decoded.userId}-${service.name}`;
             
             // PERFORMANCE FIX: Check cache first to avoid hammering Neo4j
             let localId = mappingCache.get(cacheKey);
             
-            if (!localId) {
+            if (localId === undefined) {
               localId = await getLinkedServiceId(decoded.userId, service.name);
-              if (localId) {
-                mappingCache.set(cacheKey, localId);
-              }
+              // Store null if not found to prevent cache stampedes
+              mappingCache.set(cacheKey, localId || null);
             }
             
             if (localId) {
@@ -140,57 +138,7 @@ function setupProxies(app, privateKey, publicKey) {
       }
     };
     
-      if (service.name === "shu") {
-    app.post("/api/shu/appointments", tokenTranslator, async (req, res) => {
-      try {
-        if (!env.SHU_SERVICE_URL) {
-          return res.status(500).json({
-            success: false,
-            message: "SHU_SERVICE_URL is missing in Tawi-Tawi backend environment.",
-          });
-        }
 
-        const authHeader = req.headers.authorization;
-
-        if (!authHeader) {
-          return res.status(401).json({
-            success: false,
-            message: "Authentication token is missing.",
-          });
-        }
-
-        const targetUrl = buildServiceUrl(
-          env.SHU_SERVICE_URL,
-          "/api/v1/appointments"
-        );
-
-        const response = await axios.post(targetUrl, req.body, {
-          timeout: 30000,
-          validateStatus: () => true,
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: authHeader,
-            "X-Internal-Gateway-Secret": env.GATEWAY_INTERNAL_SECRET,
-          },
-        });
-
-        return res.status(response.status).json(response.data);
-      } catch (error) {
-        logger.error("SHU appointment forwarder failed", {
-          message: error.message,
-        });
-
-        return res.status(502).json({
-          success: false,
-          message: "Unable to submit appointment request through SHU gateway.",
-          error: error.message,
-        });
-      }
-    });
-
-    logger.info("Mounted direct route: POST /api/shu/appointments -> SHU appointments");
-  }
 
   const proxy = createServiceProxy(service.name, service.url, service.prefix);
   if (proxy) {
